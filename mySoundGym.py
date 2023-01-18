@@ -13,6 +13,8 @@ import librosa
 import librosa.display
 from playsound import playsound
 
+from math import log10
+
 import random
 
 MODES = {
@@ -54,6 +56,12 @@ class App(customtkinter.CTk):
         self.title("my own implementation of SoundGym")
         self.geometry(f"{App.WIDTH}x{App.HEIGHT}")
         self.protocol("WM_DELETE_WINDOW", self.on_closing)  # call .on_closing() when app gets closed
+
+        # ============ variables ============
+        self.targetRawValue = random.random()
+        self.guessedRawValue = 0.5
+        self.numExercise = 0
+        self.MAXNUMEXERCISES = 5
 
         # ============ create 3 frames ============
 
@@ -117,20 +125,27 @@ class App(customtkinter.CTk):
         self.botton_confirm.grid(row=6, column=0, columnspan=2, pady=10, padx=20)
 
         # ============ frame_down_right ============
-        for i in range(2):
+        self.cells = [ [0]*3 for i in range(self.MAXNUMEXERCISES+1)]
+        self.cells[0][0] = tkinter.Label(self.frame_down_right, text="zgadłeś [Hz]", bg="white", width=10, padx=5, pady=1) 
+        self.cells[0][0].grid(row=0, column=0, padx=1, pady=10)
+        self.cells[0][1] = tkinter.Label(self.frame_down_right, text="było [Hz]", bg="white", width=10, padx=5, pady=1) 
+        self.cells[0][1].grid(row=0, column=1, padx=1, pady=10)
+        self.cells[0][2] = tkinter.Label(self.frame_down_right, text="wsp. różnicy", bg="white", width=10, padx=5, pady=1) 
+        self.cells[0][2].grid(row=0, column=2, padx=1, pady=10)
+        for i in range(1, self.MAXNUMEXERCISES+1):
             for j in range(3):
-                self.e = tkinter.Entry(self.frame_down_right, width=12, fg='blue')#,font=('Arial',14))
-                self.e.grid(row=i, column=j)
-                self.e.insert(tkinter.END, 0)
+                #self.table = tkinter.Entry(self.frame_down_right, width=12, fg='blue')#,font=('Arial',14))
+                self.cells[i][j] = tkinter.Label(self.frame_down_right, text="---", bg="white", width=10, padx=5, pady=1)
+                self.cells[i][j].grid(row=i, column=j, padx=1, pady=10)
+                #self.table.insert(tkinter.END, 0)
 
-        # ============ variables ============
-        self.targetRawValue = random.random()
-        self.guessedRawValue = 0.5
+
+
 
     def sliderEvent(self, e):
-        #print(dir(self.label1))
         rawval = self.slider_1.get()
-        val = round(raw2Hz(rawval), 1)
+        Hz = raw2Hz(rawval)
+        val = round(Hz, int(-log10(Hz))+2)
         self.label1.configure(text=val)
         self.guessedRawValue = rawval
 
@@ -157,7 +172,23 @@ class App(customtkinter.CTk):
         playsound("music-set/TMPtransformed.wav", block=False)
 
     def confirm_event(self, event=0):
-        pass
+        print("confirm button pressed")
+        if self.numExercise >= self.MAXNUMEXERCISES:
+            self.numExercise = 0
+            for i in range(1, self.MAXNUMEXERCISES+1):
+                for j in range(3):
+                    self.cells[i][j].configure(text="---")
+        i=self.numExercise
+
+        guessedHz = raw2Hz(self.guessedRawValue)
+        targetHz = raw2Hz(self.targetRawValue)
+        self.cells[i+1][0].configure(text=round(guessedHz, int(-log10(guessedHz))+2))
+        self.cells[i+1][1].configure(text=round(targetHz, int(-log10(targetHz))+2))
+        self.cells[i+1][2].configure(text=round(self.targetRawValue-self.guessedRawValue, 2))
+
+        self.targetRawValue = random.random()
+        self.guessedRawValue = 0.5
+        self.numExercise += 1
         
     def on_closing(self, event=0):
         self.destroy()
@@ -166,4 +197,3 @@ class App(customtkinter.CTk):
 if __name__ == "__main__":
     app = App()
     app.mainloop()
-
